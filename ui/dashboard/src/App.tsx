@@ -9,21 +9,17 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
-    TrendingUp,
     Youtube,
     MessageSquare,
     ExternalLink,
     ChevronUp,
     CheckCircle2,
     Inbox,
-    Settings,
     X,
     Search,
     PanelLeft,
     PanelRight,
-    Layout,
     List,
-    Kanban,
     Sparkles,
     Send,
     Bot,
@@ -31,6 +27,7 @@ import {
     FolderKanban,
     Plus,
     Trash2,
+    Settings,
     BrainCircuit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -461,6 +458,7 @@ const PreviewModal = ({ item, onClose }: { item: NewsItem, onClose: () => void }
                 <div className="flex-1 overflow-y-auto p-0">
                     {item.source_platform === 'youtube' ? (
                         <div className="aspect-video">
+                            {/* @ts-ignore */}
                             <ReactPlayer url={item.url} width="100%" height="100%" controls playing />
                         </div>
                     ) : (
@@ -491,7 +489,7 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+
 
     // Modals State
     const [showProjectModal, setShowProjectModal] = useState(false);
@@ -687,7 +685,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform === 'youtube' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-                                    setPreviewItem={setPreviewItem}
+
                                 />
                                 <KanbanColumn
                                     id="reddit_col"
@@ -696,7 +694,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform === 'reddit' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-                                    setPreviewItem={setPreviewItem}
+
                                 />
                                 <KanbanColumn
                                     id="inbox"
@@ -705,7 +703,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform !== 'youtube' && n.source_platform !== 'reddit' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-                                    setPreviewItem={setPreviewItem}
+
                                 />
                             </>
                         ) : filterSource === 'youtube' ? (
@@ -719,7 +717,7 @@ const App: React.FC = () => {
                                         items={filteredNews.filter(n => n.author_or_channel === author && n.status !== 'done' && n.status !== 'trash')}
                                         expandedId={expandedId}
                                         setExpandedId={setExpandedId}
-                                        setPreviewItem={setPreviewItem}
+
                                     />
                                 ))}
                             </>
@@ -734,7 +732,7 @@ const App: React.FC = () => {
                                         items={filteredNews.filter(n => (getSubreddit(n.url) || n.author_or_channel) === subreddit && n.status !== 'done' && n.status !== 'trash')}
                                         expandedId={expandedId}
                                         setExpandedId={setExpandedId}
-                                        setPreviewItem={setPreviewItem}
+
                                     />
                                 ))}
                             </>
