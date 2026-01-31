@@ -20,7 +20,11 @@ body {
   display: flex;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #111111 0%, #050505 100%);
+  background-color: #050505;
+  background-image:
+    radial-gradient(circle at 60% -20%, #151515 0%, transparent 60%),
+    radial-gradient(#1a1a1a 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px;
 }
 
 #root {

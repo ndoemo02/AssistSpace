@@ -3,7 +3,6 @@ import { supabase } from './lib/supabase';
 import {
     DndContext,
     DragOverlay,
-    useDraggable,
     useDroppable,
     pointerWithin,
 } from '@dnd-kit/core';
@@ -12,7 +11,6 @@ import {
     Youtube,
     MessageSquare,
     ExternalLink,
-    ChevronUp,
     CheckCircle2,
     Inbox,
     X,
@@ -65,15 +63,10 @@ interface Source {
     name: string;
 }
 
-// --- Draggable Card Component ---
-// --- Helper ---
-const getYoutubeThumbnail = (url: string) => {
-    try {
-        const videoId = url.split('v=')[1]?.split('&')[0];
-        if (videoId) return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-    } catch (e) { return null; }
-    return null;
-};
+import { NewsCard } from './components/NewsCard';
+import { AddGlobalItem } from './components/AddGlobalItem';
+
+
 
 const getSubreddit = (url: string) => {
     try {
@@ -84,87 +77,8 @@ const getSubreddit = (url: string) => {
     return null;
 };
 
-// --- Draggable Card Component ---
-const DraggableNewsCard = ({ item, onClickExpand, isExpanded }: { item: NewsItem, onClickExpand: () => void, isExpanded: boolean }) => {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: item.id,
-        data: { type: 'news', item }
-    });
-
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 999,
-    } : undefined;
-
-    if (isDragging) {
-        return (
-            <div ref={setNodeRef} style={style} className="opacity-50 blur-sm p-4 rounded-xl bg-zinc-800 border-2 border-emerald-500 w-full h-32" />
-        );
-    }
-
-    const thumb = item.source_platform === 'youtube' ? getYoutubeThumbnail(item.url) : null;
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            {...attributes}
-            className="group relative bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 rounded-xl p-3 transition-all hover:shadow-lg hover:shadow-emerald-500/5 touch-none overflow-hidden"
-        >
-            <div className="flex gap-3">
-                {/* Thumbnail / Icon Section */}
-                <div className="shrink-0 w-24 h-24 bg-black rounded-lg overflow-hidden relative border border-zinc-800/50">
-                    {thumb ? (
-                        <img src={thumb} alt="thumbnail" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                    ) : (
-                        <div className={`w-full h-full flex items-center justify-center ${item.source_platform === 'reddit' ? 'bg-orange-500/10' : 'bg-zinc-800'}`}>
-                            {item.source_platform === 'reddit' ? <MessageSquare className="text-orange-500" size={24} /> : <BrainCircuit className="text-zinc-600" size={24} />}
-                        </div>
-                    )}
-                    <div className="absolute top-1 left-1 bg-black/60 backdrop-blur-sm p-1 rounded-md">
-                        {item.source_platform === 'youtube' ? <Youtube className="text-red-500" size={12} /> : <MessageSquare className="text-orange-500" size={12} />}
-                    </div>
-                </div>
-
-                <div className="flex-1 min-w-0 flex flex-col">
-                    <div className="flex items-center gap-2 mb-1.5 w-full">
-                        <span className="text-[10px] uppercase font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded truncate max-w-[100px]">{item.category}</span>
-                        <span className="text-[10px] text-zinc-600 ml-auto">{new Date(item.published_at).toLocaleDateString()}</span>
-                    </div>
-                    <h4 className="text-sm font-medium text-zinc-200 leading-snug mb-1 line-clamp-3 group-hover:text-emerald-400 transition-colors">{item.title}</h4>
-                    <p className="text-[10px] text-zinc-500 truncate mt-auto">{item.author_or_channel}</p>
-                </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between border-t border-zinc-800 pt-2">
-                <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={onClickExpand}
-                    className="text-xs flex items-center gap-1 text-zinc-400 hover:text-emerald-400 bg-zinc-800/50 px-2 py-1 rounded-md hover:bg-zinc-800 transition-colors"
-                >
-                    {isExpanded ? <ChevronUp size={14} /> : <BrainCircuit size={14} />} {isExpanded ? 'Ukryj Analizę' : 'Analiza AI'}
-                </button>
-                <a href={item.url} target="_blank" className="text-zinc-500 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors" onPointerDown={(e) => e.stopPropagation()}>
-                    <ExternalLink size={14} />
-                </a>
-            </div>
-
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="pt-3 text-xs text-zinc-400 space-y-1.5 bg-black/30 -mx-3 -mb-3 p-3 mt-3 border-t border-zinc-800/50">
-                            {item.summary_points?.map((p, i) => <div key={i} className="flex gap-2 leading-relaxed"><span className="text-emerald-500 text-[10px] mt-1">●</span> {p}</div>)}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
-
 // --- Droppable Column Area ---
-const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId }: any) => {
+const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId, onUpdate }: any) => {
     const { setNodeRef } = useDroppable({ id: id, data: { type: 'column' } });
 
     return (
@@ -176,11 +90,12 @@ const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId 
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                 {items.map((item: NewsItem) => (
-                    <DraggableNewsCard
+                    <NewsCard
                         key={item.id}
                         item={item}
                         isExpanded={expandedId === item.id}
                         onClickExpand={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                        onUpdate={onUpdate}
                     />
                 ))}
             </div>
@@ -494,6 +409,7 @@ const App: React.FC = () => {
     // Modals State
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showSourcesModal, setShowSourcesModal] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
     const [previewItem, setPreviewItem] = useState<NewsItem | null>(null);
 
     const [newProject, setNewProject] = useState({ name: '', description: '', github_repo: '' });
@@ -574,6 +490,10 @@ const App: React.FC = () => {
             item.summary_points?.some(p => p.toLowerCase().includes(searchQuery.toLowerCase()));
         return matchesSource && matchesSearch;
     });
+
+    const handleUpdateItem = (updated: NewsItem) => {
+        setNews(prev => prev.map(n => n.id === updated.id ? updated : n));
+    };
 
     return (
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={pointerWithin}>
@@ -685,7 +605,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform === 'youtube' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-
+                                    onUpdate={handleUpdateItem}
                                 />
                                 <KanbanColumn
                                     id="reddit_col"
@@ -694,7 +614,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform === 'reddit' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-
+                                    onUpdate={handleUpdateItem}
                                 />
                                 <KanbanColumn
                                     id="inbox"
@@ -703,7 +623,7 @@ const App: React.FC = () => {
                                     items={filteredNews.filter(n => n.source_platform !== 'youtube' && n.source_platform !== 'reddit' && n.status !== 'done' && n.status !== 'trash')}
                                     expandedId={expandedId}
                                     setExpandedId={setExpandedId}
-
+                                    onUpdate={handleUpdateItem}
                                 />
                             </>
                         ) : filterSource === 'youtube' ? (
@@ -717,7 +637,7 @@ const App: React.FC = () => {
                                         items={filteredNews.filter(n => n.author_or_channel === author && n.status !== 'done' && n.status !== 'trash')}
                                         expandedId={expandedId}
                                         setExpandedId={setExpandedId}
-
+                                        onUpdate={handleUpdateItem}
                                     />
                                 ))}
                             </>
@@ -732,7 +652,7 @@ const App: React.FC = () => {
                                         items={filteredNews.filter(n => (getSubreddit(n.url) || n.author_or_channel) === subreddit && n.status !== 'done' && n.status !== 'trash')}
                                         expandedId={expandedId}
                                         setExpandedId={setExpandedId}
-
+                                        onUpdate={handleUpdateItem}
                                     />
                                 ))}
                             </>
@@ -859,6 +779,19 @@ const App: React.FC = () => {
                     />
                 )}
 
+                {/* Floating Action Button */}
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="fixed bottom-8 right-8 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full shadow-lg shadow-emerald-500/20 flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-[100]"
+                >
+                    <Plus size={32} />
+                </button>
+
+                <AddGlobalItem
+                    isOpen={showAddModal}
+                    onClose={() => setShowAddModal(false)}
+                    onAdd={(newItem: NewsItem) => setNews(prev => [newItem, ...prev])}
+                />
 
             </div>
         </DndContext>
