@@ -10,18 +10,11 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
     Youtube,
     MessageSquare,
-    ExternalLink,
     CheckCircle2,
     Inbox,
     X,
     Search,
     PanelLeft,
-    List,
-    Sparkles,
-    Send,
-    Bot,
-    User,
-    FolderKanban,
     Plus,
     Trash2,
     Settings,
@@ -29,10 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactPlayer from 'react-player';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 // --- Clients ---
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
 // --- Types ---
 interface NewsItem {
@@ -46,13 +36,6 @@ interface NewsItem {
     author_or_channel: string;
     status: 'inbox' | 'reviewed' | 'done' | 'trash';
     raw_content?: string;
-}
-
-interface Project {
-    id: string;
-    name: string;
-    description: string;
-    github_repo: string;
 }
 
 interface Source {
@@ -105,184 +88,7 @@ const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId,
 };
 
 
-// --- Project Hub Modal (Resources & AI Chat) ---
-const ProjectHubModal = ({ project, onClose }: { project: Project, onClose: () => void }) => {
-    const [activeTab, setActiveTab] = useState<'resources' | 'assistant'>('resources');
-    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
-        { role: 'assistant', content: `Cześć! Jestem Twoim Asystentem CTO dla projektu "${project.name}". Przeanalizowałem zgromadzone zasoby. W czym mogę pomóc?` }
-    ]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [projectItems, setProjectItems] = useState<NewsItem[]>([]);
 
-    useEffect(() => {
-        const fetchProjectItems = async () => {
-            const { data } = await supabase.from('project_assignments')
-                .select('news_item_id, news_items(*)')
-                .eq('project_id', project.id);
-            if (data) {
-                const items = data.map((d: any) => d.news_items).filter(Boolean);
-                setProjectItems(items);
-            }
-        };
-        fetchProjectItems();
-    }, [project.id]);
-
-    const handleSendMessage = async (text: string = input) => {
-        if (!text.trim()) return;
-        const newMsg = { role: 'user' as const, content: text };
-        setMessages(prev => [...prev, newMsg]);
-        setInput('');
-        setIsLoading(true);
-
-        try {
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-            // Build Context
-            const contextItems = projectItems.map(i => `- ${i.title}: ${i.summary_points?.join(' ')}`).join('\n');
-            const prompt = `
-Jesteś doświadczonym CTO i doradcą technologicznym. 
-Analizujesz projekt: "${project.name}". Opis: "${project.description}".
-Oto zgromadzone materiały/newsy przypisane do projektu:
-${contextItems}
-
-Pytanie użytkownika: ${text}
-
-Udziel konkretnej, technicznej i strategicznej odpowiedzi. Jeśli pytają o cel, wyjaśnij go w kontekście materiałów. Jeśli o alternatywy, zaproponuj inne rozwiązania. Jeśli o wdrożenie, podaj kroki. Jeśli materiałów jest mało, użyj swojej ogólnej wiedzy eksperckiej. Formatuj odpowiedź w Markdown.
-            `;
-
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-
-            setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
-        } catch (error) {
-            console.error("Gemini Error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Przepraszam, wystąpił błąd podczas komunikacji z AI. Sprawdź klucz API." }]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" onClick={onClose}>
-            <div className="w-full max-w-6xl h-[90vh] bg-zinc-900 rounded-3xl border border-zinc-800 flex flex-col overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
-                {/* Header */}
-                <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <FolderKanban className="text-emerald-500" /> {project.name}
-                        </h2>
-                        <p className="text-zinc-500 text-sm mt-1">{project.description}</p>
-                    </div>
-                    <button onClick={onClose} className="hover:bg-zinc-800 p-2 rounded-full transition-colors"><X size={24} className="text-zinc-500" /></button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Sidebar / Tabs */}
-                    <div className="w-64 border-r border-zinc-800 bg-zinc-900/50 p-4 space-y-2">
-                        <button
-                            onClick={() => setActiveTab('resources')}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeTab === 'resources' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:bg-zinc-800/50'}`}
-                        >
-                            <List size={18} /> Zasoby <span className="ml-auto text-xs bg-zinc-900 px-2 py-0.5 rounded-full">{projectItems.length}</span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('assistant')}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeTab === 'assistant' ? 'bg-gradient-to-r from-emerald-500/10 to-blue-500/10 text-emerald-400 border border-emerald-500/20' : 'text-zinc-500 hover:bg-zinc-800/50'}`}
-                        >
-                            <Sparkles size={18} /> Asystent CTO
-                        </button>
-                    </div>
-
-                    {/* Main Area */}
-                    <div className="flex-1 bg-black flex flex-col relative">
-                        {activeTab === 'resources' ? (
-                            <div className="p-8 overflow-y-auto grid grid-cols-2 gap-4 content-start">
-                                {projectItems.map(item => (
-                                    <div key={item.id} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex gap-4 hover:border-zinc-700 transition-colors">
-                                        <div className="w-20 h-20 bg-black rounded-lg shrink-0 overflow-hidden relative">
-                                            <div className="absolute inset-0 flex items-center justify-center text-zinc-700">
-                                                {item.source_platform === 'youtube' ? <Youtube size={24} /> : <MessageSquare size={24} />}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-zinc-200 text-sm line-clamp-2">{item.title}</h4>
-                                            <div className="flex gap-2 mt-2">
-                                                <a href={item.url} target="_blank" className="text-xs text-emerald-500 hover:underline flex items-center gap-1">Otwórz <ExternalLink size={10} /></a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {projectItems.length === 0 && <div className="col-span-2 text-center text-zinc-500 py-10">Brak zasobów. Przeciągnij newsy na projekt w Dashboardzie.</div>}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col h-full">
-                                {/* Chat Area */}
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                                    {messages.map((msg, i) => (
-                                        <div key={i} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-500/20'}`}>
-                                                {msg.role === 'user' ? <User size={16} /> : <Bot size={16} className="text-emerald-500" />}
-                                            </div>
-                                            <div className={`p-4 rounded-2xl max-w-[80%] whitespace-pre-wrap leading-relaxed ${msg.role === 'user' ? 'bg-zinc-800 text-white' : 'bg-zinc-900 border border-zinc-800 text-zinc-300'}`}>
-                                                {msg.content}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {isLoading && (
-                                        <div className="flex gap-4">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0"><Bot size={16} className="text-emerald-500" /></div>
-                                            <div className="flex gap-1 items-center h-12">
-                                                <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" />
-                                                <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce delay-100" />
-                                                <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce delay-200" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Input Area */}
-                                <div className="p-4 border-t border-zinc-800 bg-zinc-900">
-                                    {/* Quick Prompts */}
-                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                        {["Wyjaśnij cel i zastosowanie", "Pokaż alternatywy", "Rekomendacja wdrożeniowa", "Analiza trendów"].map(prompt => (
-                                            <button
-                                                key={prompt}
-                                                onClick={() => handleSendMessage(prompt)}
-                                                className="whitespace-nowrap px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-400 hover:text-white hover:border-emerald-500 transition-colors"
-                                            >
-                                                {prompt}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={input}
-                                            onChange={e => setInput(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                                            placeholder="Zapytaj o analizę..."
-                                            className="w-full bg-black border border-zinc-800 rounded-xl p-4 pr-12 text-sm focus:outline-none focus:border-emerald-500 transition-colors text-white"
-                                        />
-                                        <button
-                                            onClick={() => handleSendMessage()}
-                                            disabled={!input.trim() || isLoading}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-500 text-black rounded-lg hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <Send size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 
 
@@ -370,7 +176,7 @@ const PreviewModal = ({ item, onClose }: { item: NewsItem, onClose: () => void }
 
 // --- App Component ---
 const App: React.FC = () => {
-    const [activeProject, setActiveProject] = useState<Project | null>(null);
+
 
     const [news, setNews] = useState<NewsItem[]>([]);
 
@@ -386,15 +192,15 @@ const App: React.FC = () => {
 
 
     // Modals State
-    const [showProjectModal, setShowProjectModal] = useState(false);
     const [showSourcesModal, setShowSourcesModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewItem, setPreviewItem] = useState<NewsItem | null>(null);
 
-    const [newProject, setNewProject] = useState({ name: '', description: '', github_repo: '' });
 
     const fetchData = async () => {
         const { data: newsData } = await supabase.from('news_items').select('*').order('published_at', { ascending: false });
+        const { data: srcData } = await supabase.from('sources').select('*').order('created_at', { ascending: false });
+
         if (newsData) setNews(newsData as any);
         if (srcData) setSources(srcData as any);
     };
@@ -429,23 +235,8 @@ const App: React.FC = () => {
             setNews(prev => prev.map(n => n.id === itemId ? { ...n, status: 'inbox' } : n));
             await supabase.from('news_items').update({ status: 'inbox' }).eq('id', itemId);
         }
-        // 2. Dropped on a Project (Assignment)
-        else if (targetId.startsWith('project-')) {
-            const projectId = targetId.replace('project-', '');
-            const { error } = await supabase.from('project_assignments').insert([{ news_item_id: itemId, project_id: projectId }]);
-            if (!error) alert(`Przypisano do projektu!`);
-            else console.error(error);
-        }
     };
 
-    const handleCreateProject = async () => {
-        const { error } = await supabase.from('projects').insert([newProject]);
-        if (!error) {
-            setNewProject({ name: '', description: '', github_repo: '' });
-            setShowProjectModal(false);
-            fetchData();
-        }
-    };
 
     const handleAddSource = async (source: any) => {
         const { error } = await supabase.from('sources').insert([source]);
@@ -664,39 +455,7 @@ const App: React.FC = () => {
                     ) : null}
                 </DragOverlay>
 
-                {/* Project Modal */}
-                <AnimatePresence>
-                    {showProjectModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowProjectModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 p-8 shadow-2xl">
-                                <h3 className="text-2xl font-bold mb-6">Nowy Projekt</h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs text-zinc-500 uppercase font-bold mb-2 block">Nazwa Projektu</label>
-                                        <input
-                                            type="text"
-                                            value={newProject.name}
-                                            onChange={e => setNewProject({ ...newProject, name: e.target.value })}
-                                            className="w-full bg-black border border-zinc-800 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-zinc-200"
-                                            placeholder="np. Sklep AI"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-zinc-500 uppercase font-bold mb-2 block">Opis Celu</label>
-                                        <textarea
-                                            value={newProject.description}
-                                            onChange={e => setNewProject({ ...newProject, description: e.target.value })}
-                                            className="w-full bg-black border border-zinc-800 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-zinc-200 h-24"
-                                            placeholder="Co chcesz osiągnąć?"
-                                        />
-                                    </div>
-                                    <button onClick={handleCreateProject} className="w-full bg-emerald-500 text-black font-bold py-4 rounded-xl mt-4 hover:bg-emerald-400 transition-all active:scale-95">Stwórz Projekt</button>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+
 
                 {/* Sources Modal */}
                 {showSourcesModal && (
@@ -708,13 +467,7 @@ const App: React.FC = () => {
                     />
                 )}
 
-                {/* Project Hub Modal */}
-                {activeProject && (
-                    <ProjectHubModal
-                        project={activeProject}
-                        onClose={() => setActiveProject(null)}
-                    />
-                )}
+
 
                 {/* Preview Modal */}
                 {previewItem && (
