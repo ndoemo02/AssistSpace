@@ -57,13 +57,19 @@ export const NewsCard = ({ item, onClickExpand, isExpanded, onUpdate }: any) => 
             {...listeners}
             {...attributes}
             className={`
-                group relative mb-3 rounded-2xl border transition-all duration-300
-                ${isDragging ? 'opacity-50 scale-105 shadow-2xl rotate-2' : 'hover:-translate-y-1 hover:shadow-xl'}
-                ${item.source_platform === 'note' ? 'bg-yellow-500/10 border-yellow-500/20' :
-                    item.source_platform === 'prompt' ? 'bg-purple-500/10 border-purple-500/20' :
-                        'bg-zinc-900 border-zinc-800'}
+                group relative mb-4 rounded-xl transition-all duration-300
+                ${isDragging ? 'opacity-80 scale-105 shadow-2xl rotate-2 z-50' : 'hover:-translate-y-1 hover:shadow-xl'}
+                backdrop-blur-md border border-white/5
+                ${item.source_platform === 'note' ? 'bg-yellow-500/5' :
+                    item.source_platform === 'prompt' ? 'bg-purple-500/5' :
+                        'bg-zinc-900/60'}
+                shadow-lg shadow-black/20
             `}
         >
+            <div className={`
+                absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-50
+                ${item.source_platform === 'youtube' ? 'text-red-500' : item.source_platform === 'reddit' ? 'text-orange-500' : 'text-blue-500'}
+            `} />
             <div className="p-4 flex flex-col gap-3">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">

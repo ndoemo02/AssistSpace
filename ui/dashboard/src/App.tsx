@@ -82,13 +82,15 @@ const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId,
     const { setNodeRef } = useDroppable({ id: id, data: { type: 'column' } });
 
     return (
-        <div ref={setNodeRef} className="flex-1 min-w-[300px] h-full flex flex-col bg-zinc-900/40 rounded-3xl border border-zinc-800/50 backdrop-blur-sm">
-            <div className="p-4 border-b border-zinc-800/50 flex items-center gap-2 sticky top-0 bg-zinc-900/80 rounded-t-3xl backdrop-blur-md z-10">
-                <Icon size={18} className="text-emerald-500" />
-                <h3 className="font-bold text-zinc-200">{title}</h3>
-                <span className="ml-auto bg-zinc-800 text-zinc-400 text-xs px-2 py-0.5 rounded-full">{items.length}</span>
+        <div ref={setNodeRef} className="flex-1 min-w-[350px] max-w-[400px] h-full flex flex-col rounded-3xl transition-colors">
+            <div className="p-4 flex items-center gap-3 sticky top-0 z-10 transition-colors">
+                <div className="p-2 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+                    <Icon size={18} className="text-zinc-400" />
+                </div>
+                <h3 className="font-bold text-zinc-100 text-lg tracking-tight">{title}</h3>
+                <span className="ml-auto bg-white/5 border border-white/5 text-zinc-400 text-xs font-mono px-2.5 py-1 rounded-lg">{items.length}</span>
             </div>
-            <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-2 space-y-4 overflow-y-auto flex-1 custom-scrollbar px-4 pb-20">
                 {items.map((item: NewsItem) => (
                     <NewsCard
                         key={item.id}
@@ -499,103 +501,93 @@ const App: React.FC = () => {
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={pointerWithin}>
             <div className="flex h-screen bg-[#050505] text-zinc-100 font-sans overflow-hidden">
 
-                {/* Left Sidebar (was Right) / Filters */}
-                {isLeftSidebarOpen && (
-                    <aside className="w-64 border-r border-zinc-800 bg-zinc-900/30 flex flex-col shrink-0">
-                        <div className="p-4 border-b border-zinc-800 h-[65px] flex items-center">
-                            <h3 className="font-bold text-zinc-400 uppercase text-xs tracking-widest">Filtrowanie</h3>
-                        </div>
-                        <div className="p-4 space-y-2">
-                            <button
-                                onClick={() => handleFilterChange('all')}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${filterSource === 'all' ? 'bg-zinc-800 border-zinc-700 text-white' : 'border-transparent text-zinc-500 hover:bg-zinc-800/50'}`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center">
-                                    <BrainCircuit size={16} className="text-zinc-300" />
-                                </div>
-                                <span className="font-medium text-sm">Wszystko</span>
-                            </button>
+                {/* Floating Left Sidebar */}
+                <AnimatePresence>
+                    {isLeftSidebarOpen && (
+                        <motion.aside
+                            initial={{ x: -300, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -300, opacity: 0 }}
+                            className="fixed left-4 top-4 bottom-4 w-64 bg-[#09090b]/80 backdrop-blur-xl border border-white/5 rounded-3xl flex flex-col z-50 shadow-2xl shadow-black/50"
+                        >
+                            <div className="p-6">
+                                <h3 className="font-bold text-zinc-100 text-lg tracking-tight mb-6 flex items-center gap-2">
+                                    <BrainCircuit className="text-emerald-500" />
+                                    AI Master
+                                </h3>
 
-                            <button
-                                onClick={() => handleFilterChange('youtube')}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${filterSource === 'youtube' ? 'bg-red-500/10 border-red-500/50 text-white' : 'border-transparent text-zinc-500 hover:bg-zinc-800/50'}`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                                    <Youtube size={16} className="text-red-500" />
-                                </div>
-                                <span className="font-medium text-sm">YouTube</span>
-                            </button>
-
-                            <button
-                                onClick={() => handleFilterChange('reddit')}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${filterSource === 'reddit' ? 'bg-orange-500/10 border-orange-500/50 text-white' : 'border-transparent text-zinc-500 hover:bg-zinc-800/50'}`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                                    <MessageSquare size={16} className="text-orange-500" />
-                                </div>
-                                <span className="font-medium text-sm">Reddit</span>
-                            </button>
-                        </div>
-
-                        <div className="mt-auto p-4 border-t border-zinc-800 space-y-4">
-                            <button
-                                onClick={() => setShowSourcesModal(true)}
-                                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors text-xs"
-                            >
-                                <Settings size={14} /> Konfiguracja Źródeł
-                            </button>
-
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30">
-                                <h4 className="text-xs font-bold text-indigo-300 mb-1">Status Systemu</h4>
-                                <div className="flex items-center gap-2 text-xs text-indigo-200/70">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    Agent Aktywny
+                                <div className="space-y-1">
+                                    {[
+                                        { id: 'all', label: 'Wszystko', icon: BrainCircuit, color: 'text-zinc-300', bg: 'bg-zinc-700' },
+                                        { id: 'youtube', label: 'YouTube', icon: Youtube, color: 'text-red-500', bg: 'bg-red-500/20' },
+                                        { id: 'reddit', label: 'Reddit', icon: MessageSquare, color: 'text-orange-500', bg: 'bg-orange-500/20' }
+                                    ].map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => handleFilterChange(item.id as any)}
+                                            className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 group ${filterSource === item.id
+                                                ? 'bg-white/5 text-white shadow-inner shadow-white/5 border border-white/5'
+                                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                                                }`}
+                                        >
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${filterSource === item.id ? item.bg : 'bg-zinc-800'}`}>
+                                                <item.icon size={16} className={filterSource === item.id ? item.color : 'text-zinc-500'} />
+                                            </div>
+                                            <span className="font-medium text-sm">{item.label}</span>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    </aside>
-                )}
 
-                {/* Main Board */}
-                <main className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-                    <header className="px-6 border-b border-zinc-800/50 flex justify-between items-center bg-[#050505]/50 backdrop-blur-sm z-20 h-[65px]">
+                            <div className="mt-auto p-4 space-y-4">
+                                <button
+                                    onClick={() => setShowSourcesModal(true)}
+                                    className="w-full flex items-center gap-3 p-4 rounded-2xl bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white transition-all group"
+                                >
+                                    <Settings size={18} className="group-hover:rotate-90 transition-transform duration-500" />
+                                    <span className="text-xs font-medium">Konfiguracja</span>
+                                </button>
+                            </div>
+                        </motion.aside>
+                    )}
+                </AnimatePresence>
 
+                {/* Main Infinite Canvas */}
+                <main className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${isLeftSidebarOpen ? 'ml-[280px]' : 'ml-0'}`}>
+
+                    {/* Floating Header */}
+                    <header className="px-8 mt-4 mb-4 flex justify-between items-center z-40">
                         <div className="flex items-center gap-4 flex-1">
-                            <button onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} className="text-zinc-500 hover:text-white transition-colors">
-                                <PanelLeft size={20} className={isLeftSidebarOpen ? 'text-zinc-200' : ''} />
+                            <button onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} className="p-3 bg-[#09090b]/80 backdrop-blur-xl border border-white/5 rounded-2xl text-zinc-500 hover:text-white hover:border-zinc-700 transition-all shadow-lg">
+                                <PanelLeft size={20} />
                             </button>
 
-                            <div className="relative max-w-md w-full ml-4 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" size={16} />
+                            <div className="relative max-w-lg w-full group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Szukaj newsów..."
+                                    placeholder="Przeszukaj swoją wiedzę..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-zinc-900 transition-all placeholder:text-zinc-600 font-medium"
+                                    className="relative w-full bg-[#09090b]/80 backdrop-blur-xl border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-zinc-200 focus:outline-none focus:border-white/10 focus:ring-1 focus:ring-white/5 transition-all shadow-lg placeholder:text-zinc-600 font-medium"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex gap-4 text-xs text-zinc-500 items-center">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800">
+                        <div className="flex bg-[#09090b]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-1.5 shadow-lg">
+                            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/5">
                                 <Inbox size={14} className="text-blue-400" />
-                                <span>Inbox: <strong className="text-zinc-300">{news.filter(n => !n.status || n.status === 'inbox').length}</strong></span>
+                                <span className="text-xs font-medium text-zinc-400">Inbox: <strong className="text-zinc-200">{news.filter(n => !n.status || n.status === 'inbox').length}</strong></span>
                             </div>
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800">
+                            <div className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                                 <CheckCircle2 size={14} className="text-emerald-400" />
-                                <span>Gotowe: <strong className="text-zinc-300">{news.filter(n => n.status === 'done').length}</strong></span>
+                                <span className="text-xs font-medium text-zinc-400">Gotowe: <strong className="text-zinc-200">{news.filter(n => n.status === 'done').length}</strong></span>
                             </div>
-
-                            <div className="h-6 w-px bg-zinc-800 mx-2" />
-
-                            <button onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)} className="text-zinc-500 hover:text-white transition-colors">
-                                <PanelRight size={20} className={isRightSidebarOpen ? 'text-zinc-200' : ''} />
-                            </button>
                         </div>
                     </header>
 
-                    <div className="flex-1 p-6 overflow-x-auto flex gap-6 snap-x group/board">
+                    <div className="flex-1 p-0 overflow-x-auto flex gap-8 snap-x pl-4">
                         {filterSource === 'all' ? (
                             <>
                                 <KanbanColumn

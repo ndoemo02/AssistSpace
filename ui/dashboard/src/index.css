@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #050505;
+  color: #e4e4e7;
+  /* zinc-200 */
+  background-color: #030303;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,35 +21,37 @@ body {
   display: flex;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #050505;
-  background-image:
-    radial-gradient(circle at 60% -20%, #151515 0%, transparent 60%),
-    radial-gradient(#1a1a1a 1px, transparent 1px);
-  background-size: 100% 100%, 32px 32px;
+  /* Premium dark gradient */
+  background:
+    radial-gradient(circle at 50% 0%, #18181b 0%, transparent 70%),
+    linear-gradient(to bottom, #09090b, #000000);
 }
 
 #root {
   width: 100%;
+  height: 100vh;
+  overflow: hidden;
 }
 
 * {
   box-sizing: border-box;
+
 }
 
 /* Scrollbar Style */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 4px;
+  background: #27272a;
+  border-radius: 99px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  background: #3f3f46;
 }
