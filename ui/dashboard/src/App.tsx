@@ -16,7 +16,6 @@ import {
     X,
     Search,
     PanelLeft,
-    PanelRight,
     List,
     Sparkles,
     Send,
@@ -405,7 +404,6 @@ const App: React.FC = () => {
     // Filter & UI State
     const [searchQuery, setSearchQuery] = useState('');
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
 
 
     // Modals State
@@ -677,29 +675,9 @@ const App: React.FC = () => {
                     </div>
                 </main>
 
-                {/* Right Sidebar (was Left) / Projects */}
-                {isRightSidebarOpen && (
-                    <aside className="w-64 border-l border-zinc-800 bg-zinc-900/30 flex flex-col shrink-0">
-                        <div className="p-4 border-b border-zinc-800 flex items-center justify-between h-[65px]">
-                            <div className="flex items-center gap-2">
-                                <BrainCircuit className="text-emerald-500" />
-                                <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">AI Master</span>
-                            </div>
-                        </div>
 
-                        <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar">
-                            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-2 mb-2">Projekty</h3>
-                            {projects.map(p => <ProjectDropZone key={p.id} project={p} onClick={() => setActiveProject(p)} />)}
 
-                            <button
-                                onClick={() => setShowProjectModal(true)}
-                                className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-zinc-700 rounded-xl text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/50 transition-all text-xs"
-                            >
-                                <Plus size={14} /> Nowy Projekt
-                            </button>
-                        </div>
-                    </aside>
-                )}
+
 
 
                 {/* Drag Overlay */}
@@ -786,7 +764,7 @@ const App: React.FC = () => {
                 />
 
             </div>
-        </DndContext>
+        </DndContext >
     );
 };
 
