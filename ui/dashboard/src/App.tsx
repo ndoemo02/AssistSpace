@@ -284,28 +284,7 @@ Udziel konkretnej, technicznej i strategicznej odpowiedzi. Jeśli pytają o cel,
     );
 };
 
-// --- Droppable Project Card in Sidebar ---
-const ProjectDropZone = ({ project, onClick }: { project: Project, onClick: () => void }) => {
-    const { setNodeRef, isOver } = useDroppable({
-        id: `project-${project.id}`,
-        data: { type: 'project', project }
-    });
 
-    return (
-        <div
-            ref={setNodeRef}
-            onClick={onClick}
-            className={`p-3 rounded-xl border transition-all cursor-pointer group ${isOver ? 'bg-emerald-500/20 border-emerald-500' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                }`}
-        >
-            <div className="flex items-center gap-2 mb-1">
-                <FolderKanban size={16} className={isOver ? 'text-emerald-400' : 'text-zinc-500'} />
-                <h4 className="font-medium text-zinc-200 text-sm truncate">{project.name}</h4>
-            </div>
-            {isOver && <div className="text-[10px] text-emerald-400 font-bold uppercase mt-1">Upuść, aby przypisać</div>}
-        </div>
-    );
-}
 
 // --- Sources Modal ---
 const SourcesModal = ({ sources, onClose, onAdd, onDelete }: any) => {
@@ -394,7 +373,7 @@ const App: React.FC = () => {
     const [activeProject, setActiveProject] = useState<Project | null>(null);
 
     const [news, setNews] = useState<NewsItem[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
+
     const [sources, setSources] = useState<Source[]>([]);
 
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -416,11 +395,7 @@ const App: React.FC = () => {
 
     const fetchData = async () => {
         const { data: newsData } = await supabase.from('news_items').select('*').order('published_at', { ascending: false });
-        const { data: projData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-        const { data: srcData } = await supabase.from('sources').select('*').order('created_at', { ascending: false });
-
         if (newsData) setNews(newsData as any);
-        if (projData) setProjects(projData);
         if (srcData) setSources(srcData as any);
     };
 
