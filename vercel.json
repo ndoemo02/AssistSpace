@@ -1,0 +1,11 @@
+{
+    "buildCommand": "cd ui/dashboard && npm run build",
+    "outputDirectory": "ui/dashboard/dist",
+    "installCommand": "cd ui/dashboard && npm install",
+    "framework": "vite",
+    "git": {
+        "deploymentEnabled": {
+            "main": true
+        }
+    }
+}
