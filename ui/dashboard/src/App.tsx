@@ -64,7 +64,7 @@ const KanbanColumn = ({ id, title, icon: Icon, items, expandedId, setExpandedId,
     const { setNodeRef } = useDroppable({ id: id, data: { type: 'column' } });
 
     return (
-        <div ref={setNodeRef} className="flex-1 min-w-[350px] max-w-[400px] h-full flex flex-col rounded-3xl transition-colors">
+        <div ref={setNodeRef} className="flex-1 min-w-[300px] md:min-w-[350px] max-w-[400px] h-full flex flex-col rounded-3xl transition-colors">
             <div className="p-4 flex items-center gap-3 sticky top-0 z-10 transition-colors">
                 <div className="p-2 bg-white/5 rounded-xl border border-white/5 shadow-inner">
                     <Icon size={18} className="text-zinc-400" />
@@ -188,7 +188,7 @@ const App: React.FC = () => {
 
     // Filter & UI State
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+    const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth > 768 : true);
 
 
     // Modals State
@@ -205,7 +205,12 @@ const App: React.FC = () => {
         if (srcData) setSources(srcData as any);
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        fetchData();
+        const handleResize = () => setIsLeftSidebarOpen(window.innerWidth > 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const handleFilterChange = (source: 'all' | 'youtube' | 'reddit') => {
         setFilterSource(source);
@@ -317,7 +322,7 @@ const App: React.FC = () => {
                 </AnimatePresence>
 
                 {/* Main Infinite Canvas */}
-                <main className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${isLeftSidebarOpen ? 'ml-[280px]' : 'ml-0'}`}>
+                <main className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${isLeftSidebarOpen ? 'md:ml-[280px]' : 'ml-0'}`}>
 
                     {/* Floating Header */}
                     <header className="px-8 mt-4 mb-4 flex justify-between items-center z-40">
