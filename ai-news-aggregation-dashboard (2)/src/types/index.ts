@@ -57,7 +57,7 @@ export namespace AssistPersonal {
 // FLOWASSIST RADAR - Market Intelligence OS
 // ============================================
 export namespace FlowAssistMarket {
-  export type SignalSource = 'youtube_comments' | 'reddit_post' | 'linkedin' | 'twitter' | 'facebook_group' | 'custom';
+  export type SignalSource = 'youtube_comments' | 'reddit_post' | 'linkedin' | 'twitter' | 'facebook_group' | 'facebook' | 'instagram' | 'tiktok' | 'custom';
   export type LeadStatus = 'detected' | 'qualified' | 'researched' | 'outreach_ready' | 'contacted' | 'archived';
   export type AutomationReadiness = 'hot' | 'warm' | 'cold' | 'not_ready';
 

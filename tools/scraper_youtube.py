@@ -112,6 +112,7 @@ def fetch_youtube_videos(channel_identifiers, max_results=5):
                     "title": snippet["title"],
                     "url": f"https://www.youtube.com/watch?v={video_id}",
                     "published_at": snippet["publishedAt"],
+                    "thumbnail": snippet["thumbnails"]["high"]["url"] if "thumbnails" in snippet and "high" in snippet["thumbnails"] else None,
                     "summary_points": [],
                     "category": "Uncategorized",
                     "author_or_channel": snippet["channelTitle"],

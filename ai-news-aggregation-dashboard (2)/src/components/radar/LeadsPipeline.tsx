@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Search,
@@ -53,7 +53,12 @@ const readinessColors: Record<FlowAssistMarket.AutomationReadiness, string> = {
 };
 
 export function LeadsPipeline() {
-  const { radar, updateLead, deleteLead } = useStore();
+  const { radar, updateLead, deleteLead, fetchLeads } = useStore();
+
+  useEffect(() => {
+    void fetchLeads();
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<FlowAssistMarket.LeadStatus | 'all'>('all');
   const [selectedLead, setSelectedLead] = useState<FlowAssistMarket.Lead | null>(null);

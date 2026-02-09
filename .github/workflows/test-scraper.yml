@@ -1,0 +1,52 @@
+name: Test Scraper (Dry Run)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_items:
+        description: 'Maximum items to fetch per source'
+        required: false
+        default: '5'
+
+jobs:
+  test-scraper:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run scraper in dry-run mode
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+        run: |
+          echo "Running scraper in DRY RUN mode..."
+          python main_agent.py --dry-run
+      
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dry-run-results-${{ github.run_number }}
+          path: |
+            *.log
+            *.json
+          retention-days: 3
+          if-no-files-found: ignore

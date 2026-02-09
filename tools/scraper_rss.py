@@ -38,6 +38,7 @@ def fetch_reddit_rss(subreddits):
                     "summary_points": [], # To be filled by summarizer
                     "category": "Uncategorized", # To be filled by classifier/summarizer
                     "author_or_channel": entry.author if 'author' in entry else f"r/{sub}",
+                    "thumbnail": _extract_reddit_thumbnail(entry),
                     "raw_content": entry.description if 'description' in entry else ""
                 }
                 news_items.append(item)
@@ -55,6 +56,25 @@ def _parse_date(entry):
     if 'published' in entry:
         return entry.published
     return datetime.utcnow().isoformat()
+
+def _extract_reddit_thumbnail(entry):
+    """
+    Tries to find a thumbnail URL in a Reddit RSS entry.
+    """
+    if 'media_thumbnail' in entry and len(entry.media_thumbnail) > 0:
+        return entry.media_thumbnail[0]['url']
+    
+    # Try parsing from content if missing
+    if 'description' in entry:
+        desc = entry.description
+        if 'src="' in desc:
+            try:
+                start = desc.find('src="') + 5
+                end = desc.find('"', start)
+                return desc[start:end]
+            except:
+                pass
+    return None
 
 if __name__ == "__main__":
     # Test run

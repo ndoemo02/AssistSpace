@@ -62,6 +62,63 @@ def save_news_items(items):
         print(f"Supabase Ops Error: {e}")
         return {"success": False, "error": str(e)}
 
+def save_leads(leads):
+    """
+    Upserts a list of leads into the 'leads' table.
+    """
+    client = get_supabase_client()
+    if not client:
+        return {"success": False, "error": "Supabase credentials missing"}
+
+    if not leads:
+        return {"success": True, "count": 0}
+
+    try:
+        # Prepare data for insertion
+        # Map FlowAssist lead structure to DB schema
+        db_records = []
+        for lead in leads:
+            record = {
+                "company_name": lead.get("company_name") or lead.get("owner_username", "Unknown"),
+                "status": "detected",
+                "automation_readiness": "not_ready", # Default, updated by scorer
+                "score": int(lead.get("score_val", 0)),
+                "industry": "Beauty", # Default/Placeholder, should come from enricher
+                "website": lead.get("website_url"),
+                "detected_at": "now()",
+                "last_updated": "now()",
+                # Store complex objects as JSON
+                "signals": lead.get("signals", []), 
+                "contact_info": {
+                    "username": lead.get("owner_username"),
+                    "url": lead.get("url"),
+                    "phone": lead.get("public_phone_country_code") # if available
+                },
+                "notes": f"Pain Score: {lead.get('pain_score', 0)}, Gap Score: {lead.get('automation_gap_score', 0)}",
+                "tags": [lead.get("platform", "instagram")]
+            }
+            
+            # Refine Readiness based on Score
+            score = record["score"]
+            if score >= 80: record["automation_readiness"] = "hot"
+            elif score >= 50: record["automation_readiness"] = "warm"
+            elif score >= 30: record["automation_readiness"] = "cold"
+            
+            db_records.append(record)
+
+        # 1. Upsert (to avoid duplicates based on company_name and platform tags)
+        print(f"Upserting {len(db_records)} leads to Supabase...")
+        response = client.table("leads").upsert(
+            db_records, 
+            on_conflict="company_name,tags"
+        ).execute()
+        
+        return {"success": True, "count": len(response.data) if response.data else 0}
+
+    except Exception as e:
+        print(f"Supabase Ops Error (Leads): {e}")
+        return {"success": False, "error": str(e)}
+
 if __name__ == "__main__":
     # Test connection
     client = get_supabase_client()

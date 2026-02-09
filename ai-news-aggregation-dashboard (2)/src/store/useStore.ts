@@ -72,6 +72,7 @@ interface AppState {
   addChannel: (channel: Omit<FlowAssistMarket.TrackedChannel, 'id' | 'signalsFound'>) => void;
   updateChannel: (id: string, updates: Partial<FlowAssistMarket.TrackedChannel>) => void;
   deleteChannel: (id: string) => void;
+  fetchLeads: () => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -79,42 +80,7 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 // ============================================
 // SAMPLE DATA - ASSIST SPACE
 // ============================================
-const sampleKnowledgeItems: AssistPersonal.KnowledgeItem[] = [
-  {
-    id: generateId(),
-    url: 'https://www.youtube.com/watch?v=example1',
-    title: 'GPT-5 Rumors: What We Know So Far',
-    description: 'Deep dive into the latest GPT-5 speculation and features',
-    category: 'youtube',
-    source: 'youtube',
-    thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
-    addedAt: new Date(),
-    tags: ['gpt', 'openai', 'llm'],
-    isFavorite: true,
-  },
-  {
-    id: generateId(),
-    url: 'https://reddit.com/r/MachineLearning/example',
-    title: 'New SOTA in Image Generation - Community Discussion',
-    description: 'r/MachineLearning discusses the latest breakthrough',
-    category: 'reddit',
-    source: 'reddit',
-    addedAt: new Date(),
-    tags: ['image-gen', 'diffusion'],
-    isFavorite: false,
-  },
-  {
-    id: generateId(),
-    url: 'https://github.com/example/ai-tool',
-    title: 'Open Source Alternative to Claude Artifacts',
-    description: 'A new open-source project gaining traction',
-    category: 'github',
-    source: 'github',
-    addedAt: new Date(),
-    tags: ['open-source', 'tools'],
-    isFavorite: true,
-  },
-];
+const sampleKnowledgeItems: AssistPersonal.KnowledgeItem[] = [];
 
 const defaultSources: AssistPersonal.Source[] = [
   { id: generateId(), name: 'AI Explained', url: 'https://youtube.com/@aiexplained', type: 'youtube', isActive: true },
@@ -126,92 +92,9 @@ const defaultSources: AssistPersonal.Source[] = [
 // ============================================
 // SAMPLE DATA - RADAR
 // ============================================
-const sampleLeads: FlowAssistMarket.Lead[] = [
-  {
-    id: generateId(),
-    companyName: 'TechStartup Sp. z o.o.',
-    website: 'https://techstartup.pl',
-    industry: 'E-commerce',
-    size: 'small',
-    status: 'qualified',
-    automationReadiness: 'hot',
-    score: 85,
-    detectedAt: new Date(Date.now() - 86400000 * 2),
-    lastUpdated: new Date(),
-    signals: [],
-    notes: 'Mają problem z obsługą klienta - potrzebują chatbota',
-    tags: ['ecommerce', 'chatbot', 'customer-service'],
-  },
-  {
-    id: generateId(),
-    companyName: 'Marketing Agency XYZ',
-    website: 'https://marketingxyz.com',
-    industry: 'Marketing',
-    size: 'medium',
-    status: 'detected',
-    automationReadiness: 'warm',
-    score: 65,
-    detectedAt: new Date(Date.now() - 86400000),
-    lastUpdated: new Date(),
-    signals: [],
-    notes: 'Narzekają na ręczne raportowanie w komentarzach',
-    tags: ['marketing', 'automation', 'reporting'],
-  },
-  {
-    id: generateId(),
-    companyName: 'Logistyka Pro',
-    website: 'https://logistykapro.pl',
-    industry: 'Logistics',
-    size: 'medium',
-    status: 'researched',
-    automationReadiness: 'warm',
-    score: 72,
-    detectedAt: new Date(Date.now() - 86400000 * 5),
-    lastUpdated: new Date(),
-    signals: [],
-    notes: 'Szukają rozwiązania do automatyzacji faktur',
-    tags: ['logistics', 'invoicing', 'automation'],
-  },
-];
+const sampleLeads: FlowAssistMarket.Lead[] = [];
 
-const sampleSignals: FlowAssistMarket.Signal[] = [
-  {
-    id: generateId(),
-    leadId: '',
-    source: 'youtube_comments',
-    sourceUrl: 'https://youtube.com/watch?v=abc123',
-    content: '"Mamy 50 pracowników i nadal wszystko robimy w Excelu. To koszmar!"',
-    painPoints: ['manual-processes', 'excel-dependency', 'scaling-issues'],
-    sentiment: 'negative',
-    automationOpportunity: 'Automatyzacja procesów backoffice, integracja systemów',
-    detectedAt: new Date(Date.now() - 3600000 * 2),
-    relevanceScore: 88,
-  },
-  {
-    id: generateId(),
-    leadId: '',
-    source: 'reddit_post',
-    sourceUrl: 'https://reddit.com/r/smallbusiness/comments/xyz',
-    content: 'Szukamy kogoś kto pomoże zautomatyzować nasz proces onboardingu klientów...',
-    painPoints: ['onboarding', 'manual-work', 'time-consuming'],
-    sentiment: 'neutral',
-    automationOpportunity: 'Workflow automation dla onboardingu, automatyczne maile',
-    detectedAt: new Date(Date.now() - 3600000 * 5),
-    relevanceScore: 92,
-  },
-  {
-    id: generateId(),
-    leadId: '',
-    source: 'linkedin',
-    sourceUrl: 'https://linkedin.com/posts/xyz',
-    content: 'Nasz zespół spędza 20h tygodniowo na ręcznym wprowadzaniu danych...',
-    painPoints: ['data-entry', 'time-waste', 'human-error'],
-    sentiment: 'negative',
-    automationOpportunity: 'RPA, automatyzacja wprowadzania danych, AI extraction',
-    detectedAt: new Date(Date.now() - 3600000 * 8),
-    relevanceScore: 95,
-  },
-];
+const sampleSignals: FlowAssistMarket.Signal[] = [];
 
 const sampleChannels: FlowAssistMarket.TrackedChannel[] = [
   { id: generateId(), name: 'r/smallbusiness', platform: 'reddit', url: 'https://reddit.com/r/smallbusiness', isActive: true, signalsFound: 24 },
@@ -473,6 +356,89 @@ export const useStore = create<AppState>()(
             channels: state.radar.channels.filter((channel) => channel.id !== id),
           },
         })),
+
+      fetchLeads: async () => {
+        try {
+          const { supabase } = await import('@/lib/supabase');
+          const { data, error } = await supabase
+            .from('leads')
+            .select('*')
+            .order('score', { ascending: false });
+
+          if (error) {
+            console.error('Error fetching leads:', error);
+            return;
+          }
+
+          if (data) {
+            const mappedLeads: FlowAssistMarket.Lead[] = data.map((item: any) => ({
+              id: item.id,
+              companyName: item.company_name,
+              website: item.website,
+              industry: item.industry,
+              size: (item.size || 'small') as 'small' | 'medium' | 'enterprise' | 'startup',
+              status: (item.status || 'detected') as FlowAssistMarket.LeadStatus,
+              automationReadiness: (item.automation_readiness || 'warm') as FlowAssistMarket.AutomationReadiness,
+              score: item.score || 0,
+              detectedAt: new Date(item.detected_at),
+              lastUpdated: new Date(item.last_updated),
+              signals: [], // Will be populated below if available
+              notes: item.notes || '',
+              tags: item.tags || [],
+            }));
+
+            // Flatten signals from all leads for the Signal Scanner
+            const allSignals: FlowAssistMarket.Signal[] = [];
+            data.forEach((item: any, index: number) => {
+              const lead = mappedLeads[index];
+              const rawSignals = item.signals;
+              const contactInfo = item.contact_info || {};
+
+              if (rawSignals && Array.isArray(rawSignals) && rawSignals.length > 0) {
+                const mappedSignals = rawSignals.map((s: any) => ({
+                  id: s.id || Math.random().toString(36).substring(2, 9),
+                  leadId: lead.id,
+                  source: (lead.tags.includes('instagram') ? 'instagram' : 'custom') as FlowAssistMarket.SignalSource,
+                  sourceUrl: contactInfo.url || lead.website || '',
+                  content: typeof s === 'string' ? s : (s.text || s.content || "Brak treści komentarza"),
+                  painPoints: [typeof s === 'string' ? 'General' : (s.category || 'General')].filter(Boolean),
+                  sentiment: 'negative' as const,
+                  automationOpportunity: item.notes || lead.notes || "Potencjalna automatyzacja obsługi klienta",
+                  detectedAt: lead.detectedAt,
+                  relevanceScore: lead.score
+                }));
+
+                lead.signals = mappedSignals;
+                allSignals.push(...mappedSignals);
+              } else if (lead.score >= 10) {
+                // Fallback signal for high-relevance leads without detailed comments
+                allSignals.push({
+                  id: `syn-${lead.id}`,
+                  leadId: lead.id,
+                  source: (lead.tags.includes('instagram') ? 'instagram' : 'custom') as FlowAssistMarket.SignalSource,
+                  sourceUrl: contactInfo.url || lead.website || '',
+                  content: lead.notes || "Wykryto wysoką istotność biznesową na podstawie profilu i treści postów.",
+                  painPoints: lead.tags.length > 0 ? lead.tags : ['general'],
+                  sentiment: 'neutral',
+                  automationOpportunity: "Analiza wzorców aktywności sugeruje potencjał dla automatyzacji procesów.",
+                  detectedAt: lead.detectedAt,
+                  relevanceScore: lead.score
+                });
+              }
+            });
+
+            set((state) => ({
+              radar: {
+                ...state.radar,
+                leads: mappedLeads,
+                signals: allSignals.length > 0 ? allSignals : state.radar.signals
+              },
+            }));
+          }
+        } catch (err) {
+          console.error('Fetch leads exception:', err);
+        }
+      },
     }),
     {
       name: 'flowassist-storage',

@@ -26,10 +26,21 @@ const RedditIcon = () => (
 
 const sourceIcons: Record<FlowAssistMarket.SignalSource, React.ElementType> = {
   youtube_comments: Youtube,
-  reddit_post: () => <RedditIcon />,
+  reddit_post: RedditIcon,
   linkedin: Linkedin,
   twitter: Twitter,
   facebook_group: Users,
+  facebook: Users,
+  instagram: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+    </svg>
+  ),
+  tiktok: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.65-1.58-1.02v4.95c0 3.25-2.69 5.9-5.94 5.9-3.25 0-5.9-2.65-5.9-5.9 0-3.25 2.65-5.9 5.9-5.9 1.17 0 2.28.36 3.22.98V4.2c-1.1-.96-2.5-1.55-3.96-1.55-3.25 0-5.9 2.65-5.9 5.9 0 3.25 2.65 5.9 5.9 5.9 1.69 0 3.24-.71 4.31-1.85.25-.26.47-.54.67-.84.06-.09.11-.18.16-.27l.01-.01.01-.02.01-.01V.02z" />
+    </svg>
+  ),
   custom: MessageSquare,
 };
 
@@ -38,18 +49,55 @@ const sourceLabels: Record<FlowAssistMarket.SignalSource, string> = {
   reddit_post: 'Reddit',
   linkedin: 'LinkedIn',
   twitter: 'Twitter',
-  facebook_group: 'Facebook',
+  facebook_group: 'Facebook Group',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
   custom: 'Custom',
 };
 
 export function SignalScanner() {
-  const { radar, addLead, setRadarTab } = useStore();
+  const { radar, addLead, setRadarTab, fetchLeads } = useStore();
   const [filter, setFilter] = useState<'all' | FlowAssistMarket.SignalSource>('all');
   const [isScanning, setIsScanning] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanConfig, setScanConfig] = useState({
+    niche: '',
+    location: '',
+    source: 'instagram' as 'instagram' | 'tiktok' | 'facebook',
+  });
 
-  const handleScan = () => {
+  const handleScanClick = () => {
+    setShowScanModal(true);
+  };
+
+  const handleStartScan = async () => {
+    if (!scanConfig.niche) return;
+
     setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 3000);
+    setShowScanModal(false);
+
+    try {
+      await fetch('http://localhost:8000/api/run-flow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niche: scanConfig.niche,
+          location: scanConfig.location,
+          sources: [scanConfig.source]
+        }),
+      });
+      // Scan started in background
+    } catch (e) {
+      console.error("Failed to start scan:", e);
+      setIsScanning(false);
+    }
+
+    // Reset scanning state and refresh data
+    setTimeout(() => {
+      setIsScanning(false);
+      fetchLeads();
+    }, 8000); // 8 seconds to allow background process to start and maybe find first few leads
   };
 
   const filteredSignals =
@@ -96,7 +144,7 @@ export function SignalScanner() {
           </p>
         </div>
         <button
-          onClick={handleScan}
+          onClick={handleScanClick}
           disabled={isScanning}
           className={cn(
             'flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-200 transition-all hover:shadow-xl',
@@ -104,9 +152,72 @@ export function SignalScanner() {
           )}
         >
           <RefreshCw className={cn('h-4 w-4', isScanning && 'animate-spin')} />
-          <span>{isScanning ? 'Skanuję...' : 'Skanuj teraz'}</span>
+          <span>{isScanning ? 'Skanuję...' : 'Nowy Skan'}</span>
         </button>
       </div>
+
+      {/* Scan Modal */}
+      {showScanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-lg font-bold text-slate-900">Konfiguracja Skanowania</h2>
+            <p className="mt-1 text-sm text-slate-500">Określ parametry wyszukiwania leadów.</p>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Nisza / Słowo kluczowe</label>
+                <input
+                  type="text"
+                  value={scanConfig.niche}
+                  onChange={(e) => setScanConfig({ ...scanConfig, niche: e.target.value })}
+                  placeholder="np. fryzjer, mechanik"
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Lokalizacja (opcjonalne)</label>
+                <input
+                  type="text"
+                  value={scanConfig.location}
+                  onChange={(e) => setScanConfig({ ...scanConfig, location: e.target.value })}
+                  placeholder="np. warszawa"
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Źródło</label>
+                <select
+                  value={scanConfig.source}
+                  onChange={(e) => setScanConfig({ ...scanConfig, source: e.target.value as any })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="facebook">Facebook</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowScanModal(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleStartScan}
+                disabled={!scanConfig.niche}
+                className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+              >
+                Rozpocznij Skanowanie
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -143,7 +254,7 @@ export function SignalScanner() {
               <p className="text-xl font-bold text-slate-900 sm:text-2xl">
                 {Math.round(
                   radar.signals.reduce((acc, s) => acc + s.relevanceScore, 0) /
-                    (radar.signals.length || 1)
+                  (radar.signals.length || 1)
                 )}
                 %
               </p>
@@ -225,8 +336,8 @@ export function SignalScanner() {
                       {signal.sentiment === 'negative'
                         ? 'Pain Point'
                         : signal.sentiment === 'positive'
-                        ? 'Pozytywny'
-                        : 'Neutralny'}
+                          ? 'Pozytywny'
+                          : 'Neutralny'}
                     </span>
                   </div>
                 </div>
