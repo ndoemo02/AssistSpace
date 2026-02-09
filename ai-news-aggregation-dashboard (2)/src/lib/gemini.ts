@@ -1,6 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 
+console.log('Gemini Lib Loaded');
+const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+console.log('Environment Debug:');
+console.log('VITE_GEMINI_API_KEY present:', !!geminiKey);
+console.log('VITE_OPENAI_API_KEY present:', !!openaiKey);
+
 // Provider type
 export type AIProvider = 'gemini' | 'openai';
 
@@ -31,7 +39,8 @@ const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 let geminiModel: any = null;
 try {
     if (genAI) {
-        geminiModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // Use 1.5-flash which is standard now for latest SDK
+        geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
 } catch (e) {
     console.error("Failed to initialize Gemini model:", e);
