@@ -9,6 +9,7 @@ import { AssistIdeas } from '@/components/assist/AssistIdeas';
 import { AssistSources } from '@/components/assist/AssistSources';
 import { AssistSaved } from '@/components/assist/AssistSaved';
 import { AssistAIChat } from '@/components/assist/AssistAIChat';
+import { AssistAgent } from '@/components/assist/AssistAgent';
 
 // Radar Components
 import { SignalScanner } from '@/components/radar/SignalScanner';
@@ -48,6 +49,8 @@ export function App() {
         return <AssistSaved />;
       case 'ai-chat':
         return <AssistAIChat />;
+      case 'agent':
+        return <AssistAgent />;
       default:
         return <AssistDashboard />;
     }

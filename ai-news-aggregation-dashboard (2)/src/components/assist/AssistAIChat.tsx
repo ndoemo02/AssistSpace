@@ -14,6 +14,13 @@ const quickActions = [
 
 export function AssistAIChat() {
   const { assist, addAssistChatMessage, clearAssistChat } = useStore();
+
+  // Safe access default
+  const safeAssist = assist || {
+    chatMessages: [],
+    knowledgeItems: []
+  };
+
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -25,7 +32,7 @@ export function AssistAIChat() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [assist.chatMessages]);
+  }, [safeAssist.chatMessages]);
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
@@ -55,7 +62,7 @@ export function AssistAIChat() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const recentItems = assist.knowledgeItems.slice(0, 3);
+  const recentItems = safeAssist.knowledgeItems ? safeAssist.knowledgeItems.slice(0, 3) : [];
 
   return (
     <div className="flex h-[calc(100vh-6rem)] flex-col sm:h-[calc(100vh-8rem)]">
@@ -72,7 +79,7 @@ export function AssistAIChat() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-3 sm:py-4">
-        {assist.chatMessages.length === 0 ? (
+        {(!safeAssist.chatMessages || safeAssist.chatMessages.length === 0) ? (
           <div className="flex h-full flex-col items-center justify-center px-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200 sm:h-16 sm:w-16 sm:rounded-2xl">
               <Sparkles className="h-6 w-6 text-white sm:h-8 sm:w-8" />
@@ -115,7 +122,7 @@ export function AssistAIChat() {
           </div>
         ) : (
           <div className="space-y-3 px-1 sm:space-y-4">
-            {assist.chatMessages.map((message: AssistPersonal.ChatMessage) => (
+            {safeAssist.chatMessages.map((message: AssistPersonal.ChatMessage) => (
               <div key={message.id} className={cn('flex gap-2 sm:gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {message.role === 'assistant' && (
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 sm:h-8 sm:w-8">

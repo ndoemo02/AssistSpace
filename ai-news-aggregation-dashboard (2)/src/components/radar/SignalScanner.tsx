@@ -42,7 +42,7 @@ const sourceIcons: Record<FlowAssistMarket.SignalSource, React.ElementType> = {
     </svg>
   ),
   custom: MessageSquare,
-};
+} as Record<FlowAssistMarket.SignalSource, React.ElementType>;
 
 const sourceLabels: Record<FlowAssistMarket.SignalSource, string> = {
   youtube_comments: 'YouTube',
@@ -312,7 +312,7 @@ export function SignalScanner() {
       {/* Signals List */}
       <div className="space-y-3 sm:space-y-4">
         {filteredSignals.map((signal) => {
-          const Icon = sourceIcons[signal.source];
+          const Icon = sourceIcons[signal.source] || MessageSquare; // Fallback icon
           return (
             <div
               key={signal.id}

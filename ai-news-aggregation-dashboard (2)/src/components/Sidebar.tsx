@@ -28,6 +28,7 @@ const assistNavItems = [
   { id: 'ideas', label: 'Pomysły & Notatki', icon: Lightbulb },
   { id: 'sources', label: 'Źródła', icon: Link2 },
   { id: 'saved', label: 'Zapisane', icon: Bookmark },
+  { id: 'agent', label: 'Agent', icon: Brain },
   { id: 'ai-chat', label: 'AI Asystent', icon: MessageSquareText },
 ] as const;
 
@@ -186,8 +187,8 @@ export function Sidebar() {
                       isActive
                         ? 'text-white'
                         : isAssist
-                        ? 'text-slate-400 group-hover:text-violet-500'
-                        : 'text-slate-400 group-hover:text-emerald-500'
+                          ? 'text-slate-400 group-hover:text-violet-500'
+                          : 'text-slate-400 group-hover:text-emerald-500'
                     )}
                   />
                   <span

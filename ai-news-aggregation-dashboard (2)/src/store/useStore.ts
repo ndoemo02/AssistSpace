@@ -16,11 +16,17 @@ interface AppState {
   // ASSIST SPACE (Personal Intelligence)
   // ==========================================
   assist: {
-    activeTab: 'dashboard' | 'moodboard' | 'ideas' | 'sources' | 'saved' | 'ai-chat';
+    activeTab: 'dashboard' | 'moodboard' | 'ideas' | 'sources' | 'saved' | 'ai-chat' | 'agent';
     knowledgeItems: AssistPersonal.KnowledgeItem[];
     sources: AssistPersonal.Source[];
     ideas: AssistPersonal.IdeaNote[];
     chatMessages: AssistPersonal.ChatMessage[];
+    agent: {
+      goal: string;
+      status: 'idle' | 'planning' | 'running' | 'completed' | 'failed';
+      tasks: { id: string; description: string; status: 'pending' | 'running' | 'completed' | 'failed'; result?: string }[];
+      logs: string[];
+    };
   };
 
   // ==========================================
@@ -60,6 +66,13 @@ interface AppState {
   deleteIdea: (id: string) => void;
   addAssistChatMessage: (message: Omit<AssistPersonal.ChatMessage, 'id' | 'timestamp'>) => void;
   clearAssistChat: () => void;
+  // Agent Actions
+  setAgentGoal: (goal: string) => void;
+  setAgentStatus: (status: AppState['assist']['agent']['status']) => void;
+  addAgentTask: (task: string) => void;
+  updateAgentTask: (id: string, status: AppState['assist']['agent']['tasks'][0]['status'], result?: string) => void;
+  addAgentLog: (log: string) => void;
+  clearAgent: () => void;
 
   // ==========================================
   // RADAR ACTIONS
@@ -122,6 +135,12 @@ export const useStore = create<AppState>()(
         sources: defaultSources,
         ideas: [],
         chatMessages: [],
+        agent: {
+          goal: '',
+          status: 'idle',
+          tasks: [],
+          logs: [],
+        },
       },
 
       // Radar
@@ -155,7 +174,7 @@ export const useStore = create<AppState>()(
           assist: {
             ...state.assist,
             knowledgeItems: [
-              ...state.assist.knowledgeItems,
+              ...(state.assist.knowledgeItems || []),
               { ...item, id: generateId(), addedAt: new Date() },
             ],
           },
@@ -203,7 +222,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           assist: {
             ...state.assist,
-            sources: [...state.assist.sources, { ...source, id: generateId() }],
+            sources: [...(state.assist.sources || []), { ...source, id: generateId() }],
           },
         })),
 
@@ -230,7 +249,7 @@ export const useStore = create<AppState>()(
           assist: {
             ...state.assist,
             ideas: [
-              ...state.assist.ideas,
+              ...(state.assist.ideas || []),
               {
                 ...idea,
                 id: generateId(),
@@ -264,7 +283,7 @@ export const useStore = create<AppState>()(
           assist: {
             ...state.assist,
             chatMessages: [
-              ...state.assist.chatMessages,
+              ...(state.assist.chatMessages || []),
               { ...message, id: generateId(), timestamp: new Date() },
             ],
           },
@@ -273,6 +292,63 @@ export const useStore = create<AppState>()(
       clearAssistChat: () =>
         set((state) => ({
           assist: { ...state.assist, chatMessages: [] },
+        })),
+
+      // Agent Actions
+      setAgentGoal: (goal) =>
+        set((state) => ({
+          assist: { ...state.assist, agent: { ...state.assist.agent, goal } },
+        })),
+      setAgentStatus: (status) =>
+        set((state) => ({
+          assist: { ...state.assist, agent: { ...state.assist.agent, status } },
+        })),
+      addAgentTask: (description) =>
+        set((state) => ({
+          assist: {
+            ...state.assist,
+            agent: {
+              ...state.assist.agent,
+              tasks: [
+                ...(state.assist.agent.tasks || []),
+                { id: generateId(), description, status: 'pending' },
+              ],
+            },
+          },
+        })),
+      updateAgentTask: (id, status, result) =>
+        set((state) => ({
+          assist: {
+            ...state.assist,
+            agent: {
+              ...state.assist.agent,
+              tasks: state.assist.agent.tasks.map((t) =>
+                t.id === id ? { ...t, status, result } : t
+              ),
+            },
+          },
+        })),
+      addAgentLog: (log) =>
+        set((state) => ({
+          assist: {
+            ...state.assist,
+            agent: {
+              ...state.assist.agent,
+              logs: [...(state.assist.agent.logs || []), `[${new Date().toLocaleTimeString()}] ${log}`],
+            },
+          },
+        })),
+      clearAgent: () =>
+        set((state) => ({
+          assist: {
+            ...state.assist,
+            agent: {
+              goal: '',
+              status: 'idle',
+              tasks: [],
+              logs: [],
+            },
+          },
         })),
 
       // ==========================================
@@ -448,6 +524,7 @@ export const useStore = create<AppState>()(
           knowledgeItems: state.assist.knowledgeItems,
           sources: state.assist.sources,
           ideas: state.assist.ideas,
+          agent: state.assist.agent, // Persist agent state
         },
         radar: {
           leads: state.radar.leads,

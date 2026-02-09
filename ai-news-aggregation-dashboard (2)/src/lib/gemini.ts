@@ -28,10 +28,9 @@ Domyślnym językiem jest polski.`;
 // Gemini client
 const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
-const geminiModel = genAI?.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: systemPrompt,
-});
+const geminiModel = genAI ? genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+}) : null;
 
 // OpenAI client
 const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
@@ -76,8 +75,16 @@ async function generateWithGemini(message: string): Promise<string> {
     if (!geminiModel) {
         throw new Error('Gemini API key not configured');
     }
-    const result = await geminiModel.generateContent(message);
-    return result.response.text();
+    try {
+        const result = await geminiModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: systemPrompt + "\n\n" + message }] }]
+        });
+        const response = await result.response;
+        return response.text();
+    } catch (e: any) {
+        console.error("Gemini Error:", e);
+        throw new Error(`Gemini Error: ${e.message}`);
+    }
 }
 
 async function generateWithOpenAI(message: string): Promise<string> {
