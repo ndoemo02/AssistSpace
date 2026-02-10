@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Youtube,
   Github,
@@ -10,6 +10,7 @@ import {
   Clock,
   Sparkles,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/utils/cn';
@@ -26,6 +27,10 @@ export function AssistDashboard() {
   const { isLoading, error } = useSupabaseSync();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'youtube' | 'reddit' | 'github'>('all');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [isDownloadingMp3, setIsDownloadingMp3] = useState(false);
+  const [mp3Error, setMp3Error] = useState<string | null>(null);
+  const [mp3Success, setMp3Success] = useState<string | null>(null);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -40,6 +45,80 @@ export function AssistDashboard() {
   const filteredFeed = filter === 'all'
     ? assist.knowledgeItems
     : assist.knowledgeItems.filter((item) => item.category === filter);
+
+  const youtubeToMp3Endpoint = useMemo(() => {
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+    return `${apiBase}/api/youtube-to-mp3`;
+  }, []);
+
+  const extractFilename = (contentDisposition: string | null): string => {
+    if (!contentDisposition) return 'youtube-audio.mp3';
+
+    const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1]);
+      } catch {
+        return utf8Match[1];
+      }
+    }
+
+    const standardMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+    return standardMatch?.[1] || 'youtube-audio.mp3';
+  };
+
+  const handleYoutubeMp3Download = async () => {
+    const trimmedUrl = youtubeUrl.trim();
+
+    if (!trimmedUrl) {
+      setMp3Error('Wklej link YouTube, aby pobrać MP3.');
+      setMp3Success(null);
+      return;
+    }
+
+    setIsDownloadingMp3(true);
+    setMp3Error(null);
+    setMp3Success(null);
+
+    try {
+      const response = await fetch(youtubeToMp3Endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: trimmedUrl }),
+      });
+
+      if (!response.ok) {
+        let message = `Nie udało się pobrać MP3 (HTTP ${response.status}).`;
+        try {
+          const payload = await response.json();
+          if (payload?.error) message = payload.error;
+        } catch {
+          // keep fallback message
+        }
+        setMp3Error(message);
+        return;
+      }
+
+      const blob = await response.blob();
+      const filename = extractFilename(response.headers.get('content-disposition'));
+      const blobUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      setMp3Success(`Pobrano plik: ${filename}`);
+      setYoutubeUrl('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Nieznany błąd połączenia.';
+      setMp3Error(`Błąd połączenia z API: ${message}`);
+    } finally {
+      setIsDownloadingMp3(false);
+    }
+  };
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -142,6 +221,40 @@ export function AssistDashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 sm:text-base">
+              <Download className="h-4 w-4 text-violet-600" />
+              YouTube → MP3
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+              Wklej link YouTube i pobierz audio jako MP3.
+            </p>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+            <input
+              type="url"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-violet-300 focus:bg-white sm:min-w-[360px]"
+            />
+            <button
+              onClick={handleYoutubeMp3Download}
+              disabled={isDownloadingMp3}
+              className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDownloadingMp3 ? 'Pobieranie...' : 'Pobierz MP3'}
+            </button>
+          </div>
+        </div>
+
+        {mp3Error && <p className="mt-3 text-xs text-red-600 sm:text-sm">{mp3Error}</p>}
+        {mp3Success && <p className="mt-3 text-xs text-emerald-600 sm:text-sm">{mp3Success}</p>}
       </div>
 
       {/* Filters */}
