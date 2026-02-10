@@ -8,3 +8,14 @@ coverage/
 .vscode/
 .idea/
 *.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Local browser/runtime artifacts
+browser_data/
+browser_profile/
