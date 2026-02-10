@@ -15,6 +15,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+from tools.autonomous_agent import agent_instance
 
 def run_agent_process(niche, location, sources):
     """Runs the main_agent.py in a separate process."""
@@ -163,6 +164,25 @@ def youtube_to_mp3():
 def health():
     return jsonify({"status": "ok"})
 
+@app.route('/api/agent/start', methods=['POST'])
+def start_agent():
+    data = request.json
+    goal = data.get('goal')
+    
+    if not goal:
+        return jsonify({"status": "failed", "message": "Goal is required"}), 400
+        
+    result = agent_instance.start(goal)
+    return jsonify(result)
+
+@app.route('/api/agent/status', methods=['GET'])
+def agent_status():
+    return jsonify(agent_instance.get_state())
+
+@app.route('/api/agent/stop', methods=['POST'])
+def stop_agent():
+    agent_instance.stop()
+    return jsonify({"status": "stopped"})
 
 if __name__ == '__main__':
     port = 8000
