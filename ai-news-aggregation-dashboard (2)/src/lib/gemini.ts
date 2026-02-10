@@ -1,13 +1,20 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 
-console.log('Gemini Lib Loaded');
-const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const normalize = (value?: string) => (value ?? '').trim();
 
+// Accept a few common alias names to reduce config mistakes.
+const geminiApiKey = normalize(
+  import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY
+);
+const openaiApiKey = normalize(
+  import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.VITE_OPENAI_KEY
+);
+
+console.log('Gemini Lib Loaded');
 console.log('Environment Debug:');
-console.log('VITE_GEMINI_API_KEY present:', !!geminiKey);
-console.log('VITE_OPENAI_API_KEY present:', !!openaiKey);
+console.log('VITE_GEMINI_API_KEY (or alias) present:', !!geminiApiKey);
+console.log('VITE_OPENAI_API_KEY (or alias) present:', !!openaiApiKey);
 
 // Provider type
 export type AIProvider = 'gemini' | 'openai';
@@ -34,7 +41,6 @@ Odpowiadaj zwięźle, konkretnie i pomocnie. Formatuj odpowiedzi używając mark
 Domyślnym językiem jest polski.`;
 
 // Gemini client
-const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 let geminiModel: any = null;
 try {
@@ -47,7 +53,6 @@ try {
 }
 
 // OpenAI client
-const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
 const openai = openaiApiKey ? new OpenAI({
     apiKey: openaiApiKey,
     dangerouslyAllowBrowser: true,
@@ -86,13 +91,13 @@ export async function generateAIResponse(userMessage: string): Promise<string> {
         }
 
         // Both failed
-        throw new Error('Nie udało się uzyskać odpowiedzi od AI. Sprawdź klucze API w ustawieniach (.env).');
+        throw new Error('Nie udało się uzyskać odpowiedzi od AI. Sprawdź klucze API (VITE_GEMINI_API_KEY / VITE_OPENAI_API_KEY) w pliku .env i zrestartuj Vite.');
     }
 }
 
 async function generateWithGemini(message: string): Promise<string> {
     if (!geminiModel) {
-        throw new Error('Gemini API key not configured');
+        throw new Error('Gemini API key not configured (VITE_GEMINI_API_KEY)');
     }
     try {
         const result = await geminiModel.generateContent({
@@ -108,7 +113,7 @@ async function generateWithGemini(message: string): Promise<string> {
 
 async function generateWithOpenAI(message: string): Promise<string> {
     if (!openai) {
-        throw new Error('OpenAI API key not configured');
+        throw new Error('OpenAI API key not configured (VITE_OPENAI_API_KEY)');
     }
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",

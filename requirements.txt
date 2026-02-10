@@ -1,5 +1,8 @@
+flask
+flask-cors
 supabase
 google-api-python-client
 google-generativeai
 feedparser
 python-dotenv
+yt-dlp
