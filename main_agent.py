@@ -70,8 +70,12 @@ def run_news_aggregator(dry_run=False):
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         future_to_item = {executor.submit(summarize_news_item, item): item for item in items}
         for future in concurrent.futures.as_completed(future_to_item):
-            try: processed_items.append(future.result())
-            except: pass
+            item = future_to_item[future]
+            try:
+                processed_items.append(future.result())
+            except Exception as e:
+                print(f"Summarization failed for '{item.get('title', 'Unknown')}': {e}")
+                processed_items.append(item)
 
     if dry_run:
         print(json.dumps(processed_items[:2], indent=2, default=str))
