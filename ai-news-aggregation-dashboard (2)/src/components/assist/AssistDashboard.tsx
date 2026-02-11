@@ -46,10 +46,18 @@ export function AssistDashboard() {
     ? assist.knowledgeItems
     : assist.knowledgeItems.filter((item) => item.category === filter);
 
-  const youtubeToMp3Endpoint = useMemo(() => {
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
-    return `${apiBase}/api/youtube-to-mp3`;
+  const apiBaseUrl = useMemo(() => {
+    const candidates = [
+      import.meta.env.VITE_API_BASE_URL,
+      import.meta.env.VITE_API_URL,
+      import.meta.env.VITE_BACKEND_URL,
+    ];
+
+    const configured = candidates.find((value) => (value || '').trim().length > 0);
+    return configured ? configured.trim().replace(/\/$/, '') : '';
   }, []);
+
+  const youtubeToMp3Endpoint = apiBaseUrl ? `${apiBaseUrl}/api/youtube-to-mp3` : null;
 
   const extractFilename = (contentDisposition: string | null): string => {
     if (!contentDisposition) return 'youtube-audio.mp3';
@@ -76,6 +84,12 @@ export function AssistDashboard() {
       return;
     }
 
+    if (!youtubeToMp3Endpoint) {
+      setMp3Error('Brak konfiguracji API. Ustaw VITE_API_BASE_URL w Vercel Environment Variables (np. https://twoj-backend.pl).');
+      setMp3Success(null);
+      return;
+    }
+
     setIsDownloadingMp3(true);
     setMp3Error(null);
     setMp3Success(null);
@@ -89,6 +103,11 @@ export function AssistDashboard() {
 
       if (!response.ok) {
         let message = `Nie udało się pobrać MP3 (HTTP ${response.status}).`;
+
+        if (response.status === 404) {
+          message = `Endpoint nie istnieje pod adresem ${youtubeToMp3Endpoint}. Sprawdź VITE_API_BASE_URL i deployment backendu.`;
+        }
+
         try {
           const payload = await response.json();
           if (payload?.error) message = payload.error;
@@ -114,7 +133,7 @@ export function AssistDashboard() {
       setYoutubeUrl('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Nieznany błąd połączenia.';
-      setMp3Error(`Błąd połączenia z API: ${message}`);
+      setMp3Error(`Błąd połączenia z API (${apiBaseUrl || 'brak URL'}): ${message}`);
     } finally {
       setIsDownloadingMp3(false);
     }

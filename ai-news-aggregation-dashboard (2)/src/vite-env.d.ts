@@ -9,6 +9,8 @@ interface ImportMetaEnv {
     readonly VITE_OPENAI_API_KEY: string
     readonly VITE_OPENAI_KEY?: string
     readonly VITE_API_BASE_URL?: string
+    readonly VITE_API_URL?: string
+    readonly VITE_BACKEND_URL?: string
 }
 
 interface ImportMeta {
