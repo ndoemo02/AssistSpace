@@ -21,6 +21,7 @@ import {
   Flame,
   CalendarClock,
   Sparkles,
+  Download,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NewsCard } from './components/NewsCard';
@@ -197,6 +198,10 @@ const App: React.FC = () => {
   );
   const [showSourcesModal, setShowSourcesModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [isDownloadingMp3, setIsDownloadingMp3] = useState(false);
+  const [mp3Error, setMp3Error] = useState<string | null>(null);
+  const [mp3Success, setMp3Success] = useState<string | null>(null);
 
   const fetchData = async () => {
     const { data: newsData } = await supabase
@@ -280,6 +285,82 @@ const App: React.FC = () => {
   const mostRecentDate = news[0]?.published_at
     ? new Date(news[0].published_at).toLocaleDateString('pl-PL')
     : 'brak danych';
+
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+  const youtubeToMp3Endpoint = `${apiBaseUrl}/api/youtube-to-mp3`;
+
+  const getFilenameFromHeader = (headerValue: string | null): string | null => {
+    if (!headerValue) return null;
+
+    const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1]);
+      } catch {
+        return utf8Match[1];
+      }
+    }
+
+    const standardMatch = headerValue.match(/filename="?([^";]+)"?/i);
+    return standardMatch?.[1] || null;
+  };
+
+  const handleYoutubeMp3Download = async () => {
+    const normalizedUrl = youtubeUrl.trim();
+    if (!normalizedUrl) {
+      setMp3Error('Wklej link YouTube zanim rozpoczniesz pobieranie.');
+      setMp3Success(null);
+      return;
+    }
+
+    setIsDownloadingMp3(true);
+    setMp3Error(null);
+    setMp3Success(null);
+
+    try {
+      const response = await fetch(youtubeToMp3Endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: normalizedUrl }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Nie udało się pobrać MP3 (HTTP ${response.status}).`;
+        try {
+          const errorPayload = await response.json();
+          if (errorPayload?.error) {
+            errorMessage = errorPayload.error;
+          }
+        } catch {
+          // Ignore JSON parse errors and keep default message.
+        }
+
+        setMp3Error(errorMessage);
+        return;
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename = getFilenameFromHeader(contentDisposition) || 'youtube-audio.mp3';
+
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(blobUrl);
+
+      setMp3Success(`Plik „${filename}” został pobrany.`);
+      setYoutubeUrl('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Nieznany błąd połączenia.';
+      setMp3Error(`Błąd połączenia z API: ${message}`);
+    } finally {
+      setIsDownloadingMp3(false);
+    }
+  };
 
   return (
     <DndContext
@@ -412,6 +493,39 @@ const App: React.FC = () => {
                   <div className="text-sm font-semibold">{mostRecentDate}</div>
                 </div>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#09090b]/70 backdrop-blur-xl p-4 md:p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                    <Download size={16} className="text-emerald-400" />
+                    YouTube → MP3
+                  </h2>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Wklej link YouTube i pobierz audio jako MP3 przez backend AssistSpace.
+                  </p>
+                </div>
+                <div className="flex w-full md:w-auto gap-2">
+                  <input
+                    type="url"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="flex-1 md:w-[360px] bg-black/60 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50"
+                  />
+                  <button
+                    onClick={handleYoutubeMp3Download}
+                    disabled={isDownloadingMp3}
+                    className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isDownloadingMp3 ? 'Pobieram...' : 'Pobierz MP3'}
+                  </button>
+                </div>
+              </div>
+
+              {mp3Error && <p className="text-xs text-red-400 mt-3">{mp3Error}</p>}
+              {mp3Success && <p className="text-xs text-emerald-400 mt-3">{mp3Success}</p>}
             </div>
           </header>
 
